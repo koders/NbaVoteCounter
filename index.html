@@ -1,0 +1,66 @@
+<script src="https://cdn.socket.io/socket.io-1.4.3.js"></script>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.0-rc.0/angular.min.js"></script>
+<script type="text/javascript">
+
+
+    var app = angular.module('app', []);
+    app.controller('controller', function($scope){
+        $scope.users = {};
+
+        var _socket = null;
+        if(io !== undefined) {
+            // Here you create the connection with the server
+            _socket = io.connect("http://127.0.0.1:8080/");
+
+            // This will listen to the "new tweet" signal everytime
+            // there's a new tweet incoming into the stream
+            _socket.on("new tweet", function(tweet) {
+                $(".list").append("<Strong>" + tweet.user.name + "</Strong>" + "<br/>" + tweet.text + "<br/><br/>");
+
+                if($scope.users[tweet.user.name]) {
+                    $scope.users[tweet.user.name] ++;
+                } else {
+                    $scope.users[tweet.user.name] = 1;
+                }
+                console.log($scope.users);
+                $scope.$apply();
+            });
+
+            // This will listen when the server emits the "connected" signal
+            // informing to the client that the connection has been stablished
+            _socket.on("connected", function(r) {
+                $("head").find("title").html("Tracking now: " + r.tracking);
+                $(".tracking").html(r.tracking);
+
+                // Here the client tells the server to "start stream"
+                emitMsj("start stream");
+            });
+        }
+
+        function emitMsj(signal, o) {
+            if(_socket) {
+                _socket.emit(signal, o);
+            }
+            else {
+                alert("Shit! Socket.io didn't start!");
+            }
+        }
+    });
+</script>
+<html ng-app="app">
+<body ng-controller="controller">
+    <div class="top-users">
+        <ul>
+            {{users}}
+            <li ng-repeat="(key, value) in users">
+                <span>{{key}}: {{value}}</span>
+            </li>
+        </ul>
+    </div>
+    <div class="container">
+        <ul class="list">
+        </ul>
+    </div>
+</body>
+</html>
